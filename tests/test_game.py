@@ -1,8 +1,10 @@
+import os
 import unittest
+from unittest.mock import patch
 
 import pygame
 
-from game import ARENA, CRYSTAL_POSITIONS, Game, PLAYER_SPEED
+from game import ARENA, CRYSTAL_POSITIONS, Game, HEIGHT, PLAYER_SPEED, WIDTH, main
 
 
 class GameplayTests(unittest.TestCase):
@@ -72,6 +74,35 @@ class GameplayTests(unittest.TestCase):
         slime.update(0.05)
         self.assertLess(slime.speed, 0)
         self.assertEqual(slime.x, slime.right)
+
+
+class WindowTests(unittest.TestCase):
+    def test_resize_preserves_minimum_canvas_size(self):
+        for requested, expected in [
+            ((WIDTH - 1, HEIGHT - 1), (WIDTH, HEIGHT)),
+            ((WIDTH - 1, HEIGHT * 2), (WIDTH, HEIGHT * 2)),
+            ((WIDTH * 2, HEIGHT - 1), (WIDTH * 2, HEIGHT)),
+            ((WIDTH, HEIGHT), (WIDTH, HEIGHT)),
+            ((WIDTH * 2, HEIGHT * 2), (WIDTH * 2, HEIGHT * 2)),
+        ]:
+            with self.subTest(requested=requested):
+                displayed_sizes = []
+                flip = pygame.display.flip
+
+                def capture_frame():
+                    window = pygame.display.get_surface()
+                    displayed_sizes.append(window.get_size())
+                    self.assertTrue(window.get_flags() & pygame.RESIZABLE)
+                    flip()
+
+                events = [pygame.event.Event(pygame.VIDEORESIZE,
+                                             w=requested[0], h=requested[1]),
+                          pygame.event.Event(pygame.QUIT)]
+                with patch.dict(os.environ, {"SDL_VIDEODRIVER": "dummy"}), \
+                        patch("pygame.event.get", return_value=events), \
+                        patch("pygame.display.flip", side_effect=capture_frame):
+                    main()
+                self.assertEqual(displayed_sizes, [expected])
 
 
 if __name__ == "__main__":

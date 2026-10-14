@@ -210,6 +210,9 @@ def main():
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
+                elif event.type == pygame.VIDEORESIZE:
+                    window = pygame.display.set_mode(
+                        (max(WIDTH, event.w), max(HEIGHT, event.h)), pygame.RESIZABLE)
                 elif event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         running = False
